@@ -44,7 +44,7 @@ def render_uploader() -> None:
     """Render the medical PDF uploader in the sidebar."""
 
     with st.sidebar:
-        st.title("🩺 MediDoc AI")
+        st.title("🚑 Medical Assistant Chatbot")
         st.caption("Medical document knowledge base")
 
         st.divider()
