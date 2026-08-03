@@ -1,5 +1,3 @@
-from typing import Any
-
 import streamlit as st
 
 from utils.api import APIError, ask_question
@@ -17,104 +15,38 @@ SUGGESTED_QUESTIONS = [
 ]
 
 
-def format_source(source: Any) -> str:
-    """
-    Convert a backend source value into readable text.
-
-    The backend may return a source as a string or dictionary.
-    """
-
-    if isinstance(source, dict):
-        source_name = (
-            source.get("source_file")
-            or source.get("source")
-            or source.get("file_name")
-            or "Unknown document"
-        )
-
-        page = source.get("page")
-
-        if page is not None:
-            try:
-                return f"{source_name} — Page {int(page) + 1}"
-            except (TypeError, ValueError):
-                return f"{source_name} — Page {page}"
-
-        return str(source_name)
-
-    return str(source).strip()
-
-
-def normalize_sources(sources: list[Any]) -> list[str]:
-    """Remove empty and duplicate source values."""
-
-    normalized_sources = []
-
-    for source in sources:
-        formatted_source = format_source(source)
-
-        if (
-            formatted_source
-            and formatted_source != "Unknown document"
-            and formatted_source not in normalized_sources
-        ):
-            normalized_sources.append(formatted_source)
-
-    return normalized_sources
-
-
-def render_sources(sources: list[Any]) -> None:
-    """Render the source documents used for an answer."""
-
-    normalized_sources = normalize_sources(sources)
-
-    if not normalized_sources:
-        return
-
-    with st.expander(
-        f"📚 Sources used ({len(normalized_sources)})",
-        expanded=False,
-    ):
-        for source in normalized_sources:
-            st.markdown(f"- `{source}`")
-
-
 def render_message(message: dict) -> None:
-    """Render one stored chat message."""
+    """Render one chat message without displaying document sources."""
 
     role = message.get("role", "assistant")
     content = message.get("content", "")
-    sources = message.get("sources", [])
 
     avatar = "👤" if role == "user" else "🩺"
 
     with st.chat_message(role, avatar=avatar):
         st.markdown(content)
 
-        if role == "assistant":
-            render_sources(sources)
-
 
 def render_welcome_section() -> str | None:
     """
-    Render the empty conversation screen.
+    Render the welcome area and suggested questions.
 
-    Returns the selected suggested question when a button is clicked.
+    Returns:
+        The selected suggested question, or None.
     """
 
     with st.container(border=True):
         st.subheader("Welcome to your medical knowledge assistant")
 
         st.write(
-            "Upload trusted medical PDFs from the sidebar, then ask questions "
-            "about diseases, symptoms, risk factors, prevention, and other "
-            "information contained in the documents."
+            "Ask questions about symptoms, conditions, risk factors, "
+            "prevention, and other medical information available in "
+            "the application's knowledge base."
         )
 
         st.markdown("#### Suggested questions")
 
         selected_question = None
-
         first_column, second_column = st.columns(2)
 
         for index, question in enumerate(SUGGESTED_QUESTIONS):
@@ -136,13 +68,14 @@ def render_welcome_section() -> str | None:
 
 
 def process_question(question: str) -> None:
-    """Send a question to the backend and display its answer."""
+    """Send the user's question to the backend and display the answer."""
 
     question = question.strip()
 
     if not question:
         return
 
+    # Save and display the user's message
     st.session_state.messages.append(
         {
             "role": "user",
@@ -153,31 +86,24 @@ def process_question(question: str) -> None:
     with st.chat_message("user", avatar="👤"):
         st.markdown(question)
 
+    # Request and display the assistant's answer
     with st.chat_message("assistant", avatar="🩺"):
         try:
-            with st.spinner(
-                "Searching the medical knowledge base..."
-            ):
+            with st.spinner("Searching the medical knowledge base..."):
                 response_data = ask_question(question)
 
-            answer = response_data.get("response")
-
-            if not answer:
-                answer = (
-                    "The backend completed the request but returned "
-                    "an empty answer."
-                )
-
-            sources = response_data.get("sources", [])
+            answer = response_data.get(
+                "response",
+                "The backend returned an empty answer.",
+            )
 
             st.markdown(answer)
-            render_sources(sources)
 
+            # Store only the answer, without source metadata
             st.session_state.messages.append(
                 {
                     "role": "assistant",
                     "content": answer,
-                    "sources": sources,
                 }
             )
 
@@ -193,17 +119,16 @@ def process_question(question: str) -> None:
                 {
                     "role": "assistant",
                     "content": error_message,
-                    "sources": [],
                 }
             )
 
 
 def render_chat() -> None:
-    """Render the chatbot area."""
+    """Render the complete chatbot interface."""
 
-    st.subheader("💬 Chat with your medical library")
+    st.subheader("💬 Chat with your medical assistant")
 
-    # Display previous conversation messages.
+    # Render the existing conversation
     for message in st.session_state.messages:
         render_message(message)
 
@@ -213,7 +138,7 @@ def render_chat() -> None:
         selected_question = render_welcome_section()
 
     typed_question = st.chat_input(
-        "Ask a question about your medical documents..."
+        "Ask a question about a medical condition..."
     )
 
     question = typed_question or selected_question
