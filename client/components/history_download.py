@@ -78,7 +78,7 @@ def render_history_download() -> None:
         st.download_button(
             label="Download Chat History",
             data=history_text,
-            file_name="medidoc_chat_history.txt",
+            file_name="medical_assistant_chat_history.txt",
             mime="text/plain",
             use_container_width=True,
         )
