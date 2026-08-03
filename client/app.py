@@ -1,6 +1,7 @@
 import streamlit as st
 
 
+# This must be the first Streamlit command.
 st.set_page_config(
     page_title="Medical Assistant Chatbot",
     page_icon="🚑",
@@ -15,10 +16,18 @@ from components.upload import render_uploader
 
 
 def initialize_session_state() -> None:
-    """Initialize persistent values for the current browser session."""
+    """
+    Initialize values that must persist during the browser session.
+
+    uploaded_documents is still required internally by the uploader,
+    even though it is no longer displayed as a page metric.
+    """
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
+    if "uploaded_documents" not in st.session_state:
+        st.session_state.uploaded_documents = []
 
 
 def render_header() -> None:
@@ -38,12 +47,14 @@ def render_header() -> None:
         icon="🚑",
     )
 
+    # Count only user messages.
     question_count = sum(
         1
         for message in st.session_state.messages
         if message.get("role") == "user"
     )
 
+    # Count only successful assistant answers.
     answer_count = sum(
         1
         for message in st.session_state.messages
@@ -76,13 +87,15 @@ def render_header() -> None:
 
 
 def main() -> None:
-    """Run the Streamlit application."""
+    """Run the Streamlit frontend."""
 
     initialize_session_state()
 
+    # Sidebar components
     render_uploader()
     render_history_download()
 
+    # Main-page components
     render_header()
     render_chat()
 
