@@ -3,8 +3,8 @@ import streamlit as st
 
 # This must be the first Streamlit command in the application.
 st.set_page_config(
-    page_title="MediDoc AI",
-    page_icon="🩺",
+    page_title="Medical Assistant Chatbot",
+    page_icon="🚑",
     layout="wide",
     initial_sidebar_state="expanded",
 )
