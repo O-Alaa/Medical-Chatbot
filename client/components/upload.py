@@ -4,7 +4,7 @@ from utils.api import APIError, upload_pdfs_api
 
 
 def render_selected_files(uploaded_files) -> None:
-    """Display files selected in the uploader."""
+    """Display the PDF files currently selected by the user."""
 
     if not uploaded_files:
         return
@@ -22,7 +22,7 @@ def render_selected_files(uploaded_files) -> None:
 
 
 def render_uploaded_documents() -> None:
-    """Display documents uploaded in the current Streamlit session."""
+    """Display PDFs uploaded during the current browser session."""
 
     uploaded_documents = st.session_state.get(
         "uploaded_documents",
@@ -33,7 +33,7 @@ def render_uploaded_documents() -> None:
         return
 
     with st.expander(
-        f"Session documents ({len(uploaded_documents)})",
+        f"Uploaded this session ({len(uploaded_documents)})",
         expanded=False,
     ):
         for document_name in uploaded_documents:
@@ -41,11 +41,19 @@ def render_uploaded_documents() -> None:
 
 
 def render_uploader() -> None:
-    """Render the medical PDF uploader in the sidebar."""
+    """Render the PDF upload controls inside the sidebar."""
+
+    # Defensive initialization prevents AttributeError even if this
+    # component is called before app.py initializes the session state.
+    if "uploaded_documents" not in st.session_state:
+        st.session_state.uploaded_documents = []
 
     with st.sidebar:
         st.title("🚑 Medical Assistant Chatbot")
-        st.caption("Medical document knowledge base")
+
+        st.caption(
+            "Upload trusted medical PDFs to expand the knowledge base."
+        )
 
         st.divider()
 
@@ -55,7 +63,10 @@ def render_uploader() -> None:
             label="Select medical PDF files",
             type=["pdf"],
             accept_multiple_files=True,
-            help="You can select and process multiple PDF files.",
+            help=(
+                "Select one or more PDF documents. They will be processed "
+                "and stored in the Pinecone knowledge base."
+            ),
         )
 
         render_selected_files(uploaded_files)
@@ -70,7 +81,7 @@ def render_uploader() -> None:
         if upload_clicked and uploaded_files:
             try:
                 with st.spinner(
-                    "Uploading, extracting text, and creating embeddings..."
+                    "Uploading documents and creating embeddings..."
                 ):
                     result = upload_pdfs_api(uploaded_files)
 
@@ -79,8 +90,13 @@ def render_uploader() -> None:
                     for uploaded_file in uploaded_files
                 ]
 
+                # Use .get() so the uploader remains safe even if the
+                # session-state variable is unexpectedly missing.
                 existing_documents = set(
-                    st.session_state.uploaded_documents
+                    st.session_state.get(
+                        "uploaded_documents",
+                        [],
+                    )
                 )
 
                 existing_documents.update(uploaded_names)
@@ -99,17 +115,23 @@ def render_uploader() -> None:
                 )
 
                 st.toast(
-                    "Knowledge base updated.",
+                    "Medical knowledge base updated.",
                     icon="✅",
                 )
 
             except APIError as error:
-                st.error(str(error))
+                st.error(f"Upload failed: {error}")
+
+            except Exception as error:
+                st.error(
+                    "An unexpected error occurred while uploading "
+                    f"the documents: {error}"
+                )
 
         render_uploaded_documents()
 
         st.divider()
 
         st.caption(
-            "Use trusted and legally shareable medical documents."
+            "Use trusted and legally shareable medical documents only."
         )
