@@ -29,7 +29,7 @@ def build_chat_history() -> str:
     """Convert the conversation into plain text."""
 
     lines = [
-        "MediDoc AI — Chat History",
+        "Medical Assistant Chatbot — Chat History",
         f"Exported: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
         "",
     ]
