@@ -28,7 +28,7 @@ def initialize_session_state() -> None:
 def render_header() -> None:
     """Render the main application heading and statistics."""
 
-    st.title("🩺 MediDoc AI")
+    st.title("🚑 Medical Assistant Chatbot")
     st.caption(
         "Ask questions based on your uploaded medical documents."
     )
